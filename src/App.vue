@@ -391,7 +391,7 @@ onMounted(function() {
             {text:"Set Corner 1",callback:setCorner1},
             {text:"Set Corner 2",callback:setCorner2}
         ],
-        center: [33.00069840140683, -117.02377229131925],
+        center: [48.15619,7.61215],
         preferCanvas: true,
         zoom: 16,
         zoomControl: false,
