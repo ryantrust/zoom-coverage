@@ -196,28 +196,31 @@ function checkPano(id) {
             checkedPanos.delete(id);
             return;
         }
-        panos[res.location.pano] = {
-            lat: res.location.latLng.lat(),
-            lng: res.location.latLng.lng(),
-            date: res.imageDate
-        };
 
-        L.marker([res.location.latLng.lat(), res.location.latLng.lng()], {
-            icon: defaultIcon,
-            title: id,
-            opacity: 0.75
-        })
-        .on("click", () => {
-            window.open(
-                `https://www.google.com/maps/@?api=1&map_action=pano&pano=${
-                    res.location.pano
-                }
-                ${location.heading ? "&heading=" + location.heading : ""}
-                ${location.pitch ? "&pitch=" + location.pitch : ""}`,
-                "_blank"
-            );
-        })
-        .addTo(markerLayer);
+        if(!(res.location.pano in panos)) {
+            panos[res.location.pano] = {
+                lat: res.location.latLng.lat(),
+                lng: res.location.latLng.lng(),
+                date: res.imageDate
+            };
+
+            L.marker([res.location.latLng.lat(), res.location.latLng.lng()], {
+                icon: defaultIcon,
+                title: id,
+                opacity: 0.75
+            })
+            .on("click", () => {
+                window.open(
+                    `https://www.google.com/maps/@?api=1&map_action=pano&pano=${
+                        res.location.pano
+                    }
+                    ${location.heading ? "&heading=" + location.heading : ""}
+                    ${location.pitch ? "&pitch=" + location.pitch : ""}`,
+                    "_blank"
+                );
+            })
+            .addTo(markerLayer);
+        }
 
         checkCoords(res.location.latLng.lat(), res.location.latLng.lng());
         for (var g of res.time) checkPano(g.pano);
@@ -304,8 +307,9 @@ function onClick(e) {
 }
 
 function processZoomData(data) {
-    let list = JSON.parse("["+data.substr(data.indexOf("\n")+2))[1][1];
-    if(!list) return null;
+    let d = JSON.parse("["+data.substr(data.indexOf("\n")+2))[1];
+    if(!d || !d[1]) return [];
+    let list = d[1];
     let ret = [];
     for(let item of Object.values(list)) {
         ret.push({pano:item[0][0][1],lat:item[0][2][0][2],lng:item[0][2][0][3]});
@@ -321,6 +325,7 @@ function getTile(x, y) {
         let data = processZoomData(response.data);
         if(!data) return;
         for(let pano of data) {
+            if(pano.pano in panos) continue;
             panos[pano.pano] = {
                 lat: pano.lat,
                 lng: pano.lng,
@@ -345,10 +350,9 @@ function getTile(x, y) {
         }
     })
     .catch(function (error) {
-        console.log(error);
-    })
-    .then(function () {
-        // always executed
+        console.error("Error getting tile "+x+", "+y+", trying again.")
+        checkedTiles.delete(x+","+y);
+        getTile(x,y);
     });
 }
 
@@ -361,6 +365,7 @@ async function getTileRange(fromX, toX, fromY, toY) {
     });
     debugLayer.redraw();
     return {results:results,errors:errors};
+    //TODO MAKE SINGLE PROMISEPOOL FOR WHOLE PROGRAM
 }
 
 function getUserTileRange() {
