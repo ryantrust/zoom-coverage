@@ -433,6 +433,13 @@ onMounted(function() {
 
     checkClusters();
 
+    // Fix hard reload issue
+    const mapDiv = document.getElementById("map");
+    const resizeObserver = new ResizeObserver(() => {
+        map.invalidateSize();
+    });
+    resizeObserver.observe(mapDiv);
+
     //getTileRange(68932, 68937, 41581, 41600);
 });
 
