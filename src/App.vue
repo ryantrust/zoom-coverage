@@ -92,7 +92,7 @@ let defaultIcon = new L.Icon({
 
 const checkedPanos = new Set();
 const checkedTiles = new Set();
-let panos = {};
+let panos = [];
 let map;
 const SV = new google.maps.StreetViewService();
 
@@ -198,11 +198,12 @@ function checkPano(id) {
         }
 
         if(!(res.location.pano in panos)) {
-            panos[res.location.pano] = {
+            panos.push({
+                panoId: res.location.pano,
                 lat: res.location.latLng.lat(),
                 lng: res.location.latLng.lng(),
                 date: res.imageDate
-            };
+            });
 
             L.marker([res.location.latLng.lat(), res.location.latLng.lng()], {
                 icon: defaultIcon,
@@ -231,7 +232,7 @@ function checkPano(id) {
 }
 
 function exportToJSON() {
-    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify(panos));
+    const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(JSON.stringify({customCoordinates: panos}));
     const fileName = `Generated map.json`;
     const linkElement = document.createElement("a");
     linkElement.href = dataUri;
@@ -241,7 +242,7 @@ function exportToJSON() {
 
 function exportToCSV() {
     let csv = "";
-    for(var h of Object.values(panos)) {
+    for (var h of panos) {
         csv+=h.lat+","+h.lng+"\n";
     }
     const dataUri = "data:application/json;charset=utf-8," + encodeURIComponent(csv);
@@ -323,13 +324,14 @@ function getTile(x, y) {
     return axios.get("https://www.google.com/maps/photometa/ac/v1?pb=!1m1!1smaps_sv.tactile!6m3!1i"+x+"!2i"+y+"!3i17!8b1")
     .then(function (response) {
         let data = processZoomData(response.data);
-        if(!data) return;
-        for(let pano of data) {
-            if(pano.pano in panos) continue;
-            panos[pano.pano] = {
+        if (!data) return;
+        for (let pano of data) {
+            if (panos.some(l => l.panoId == pano.pano)) continue;
+            panos.push({
+                panoId: pano.pano,
                 lat: pano.lat,
                 lng: pano.lng,
-            };
+            });
             L.marker([pano.lat, pano.lng], {
                 icon: defaultIcon,
                 title: pano.pano,
@@ -346,7 +348,7 @@ function getTile(x, y) {
                 );
             })
             .addTo(markerLayer);
-            if(settings.checkLinked)checkPano(pano.pano);
+            if(settings.checkLinked) checkPano(pano.pano);
         }
     })
     .catch(function (error) {
