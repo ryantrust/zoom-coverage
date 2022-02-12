@@ -144,7 +144,7 @@ L.gridLayer.debugCoords = function(opts) {
 let debugLayer = L.gridLayer.debugCoords({minZoom:16,maxZoom:20,maxNativeZoom: 17,minNativeZoom: 17});
 
 function checkClusters() {
-    if(settings.cluster) markerLayer.enableClustering();
+    if (settings.cluster) markerLayer.enableClustering();
     else markerLayer.disableClustering();
 }
 
@@ -271,6 +271,10 @@ function getRandomColor() {
 
 function clearMarkers() {
     markerLayer.clearLayers();
+}
+
+top.goto = function(lat, lng) {
+	map.setView(new L.LatLng(lat, lng), 13);
 }
 
 function project(lat, lng) {
